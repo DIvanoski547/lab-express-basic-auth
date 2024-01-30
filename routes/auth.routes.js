@@ -2,16 +2,20 @@ const bcrypt = require("bcrypt");
 const saltRounds = 10;
 const express = require("express");
 const router = express.Router();
-const Usersmodel = require("../models/User.model");
+const User = require("../models/User.model");
+const {isLoggedIn, isLoggedOut} = require("../middlewares/route-guard")
 
-router.get("/signup", (req, res, next) => {
+// SIGN UP ROUTES //
+router.get("/signup", isLoggedOut, (req, res, next) => {
+  console.log(req.session)
   res.render("auth/signup");
 });
 
-router.post("/signup", (req, res, next) => {
+router.post("/signup", isLoggedOut, (req, res, next) => {
   const { username, password } = req.body;
 
-  Usersmodel.findOne({ username }).then((user) => {
+  Usersmodel.findOne({ username })
+  .then((user) => {
     if (user) {
       res.render("auth/signup", { errorMessage: "Username already exists" });
     } else {
@@ -21,6 +25,7 @@ router.post("/signup", (req, res, next) => {
           return Usersmodel.create({ username, password: hash });
         })
         .then((user) => {
+          req.session.currentUser = user;
           res.redirect("/profile");
         })
         .catch(err => console.log(err))
@@ -28,8 +33,11 @@ router.post("/signup", (req, res, next) => {
   });
 });
 
-router.get("/profile", (req, res, next) => {
-  res.render("auth/profile");
-});
+// LOGIN ROUTES //
+
+router.get("/login", isLoggedOut, (req, res) => {
+  console.log(req.session)
+  res.render("auth/login")
+})
 
 module.exports = router;
